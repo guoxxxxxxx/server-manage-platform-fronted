@@ -16,6 +16,10 @@ export const useStore = defineStore('main', {
       this.token = token;
     },
 
+    getToken(){
+      return this.token;
+    },
+
     clear() {
       this.currentUser = null;
       this.token = null;

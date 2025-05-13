@@ -1,0 +1,241 @@
+<template>
+    <div class="common-layout">
+        <el-container>
+            <el-header>
+                <div class="header-container"
+                    style="display: flex; justify-content: space-between; height: 60px; align-items: center;">
+                    <div class="left">
+                        <el-input v-model="searchInput" style="width: 240px" placeholder="Please Input"
+                            :suffix-icon="Search" />
+                    </div>
+                    <div class="right" style="display: flex;">
+                        <div class="refresh" style="margin-right: 30px;">
+                            <el-text class="mx-1">距离下次刷新还有: {{ refreshTime }} 秒</el-text>
+                        </div>
+                        <div class="shudown">
+                            <el-button type="danger" size="small"
+                                @click="shutdownAllServerDialogVisible = true">关闭所有服务器</el-button>
+                            <el-button type="success" size="small" @click="refresh">立即刷新</el-button>
+                            <el-button type="primary" size="small" @click="clickNew">新建</el-button>
+                        </div>
+                    </div>
+                </div>
+            </el-header>
+            <el-divider style="margin: 5px;" />
+            <el-main class="main-container">
+                <el-table :data="tableData" style="width: 100%" row-key="id" @selection-change="handleSelectionChange">
+                    <el-table-column fixed="left" type="selection" width="55" />
+                    <el-table-column prop="id" label="id" width="60" />
+                    <el-table-column prop="name" label="主机名" width="120" />
+                    <el-table-column prop="ip" label="主机ip" width="150" />
+                    <el-table-column prop="operatingSystem" label="操作系统" width="200" />
+                    <el-table-column prop="location" label="地点" width="120" />
+                    <el-table-column prop="owner" label="所有人" width="120" />
+                    <el-table-column label="磁盘" max-width="100">
+                        <template #default="scope">
+                            <el-progress type="dashboard"
+                                :percentage="(100.0 - scope.row.freeDiskSpace * 100 / scope.row.diskSpace).toFixed(1)"
+                                :color="scope.row.status === '离线' ? '#ccc' : customColors" width="60" />
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="内存" max-width="100">
+                        <template #default="scope">
+                            <el-progress type="dashboard"
+                                :percentage="(100.0 - scope.row.freeMemorySpace * 100 / scope.row.memorySpace).toFixed(1)"
+                                :color="scope.row.status === '离线' ? '#ccc' : customColors" width="60" />
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="status" label="状态" width="110">
+                        <template #default="scope">
+                            <el-tag :type="scope.row.status === '在线' ? 'success' : 'info'">{{ scope.row.status
+                                }}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="lastUpdate" label="上次更新时间" width="200" />
+                    <el-table-column fixed="right" label="操作" min-width="120">
+                        <template #default="scope">
+                            <div class="container">
+                                <div class="container-1">
+                                    <el-button link type="primary" size="small"
+                                        @click="clickGoToServerDetails(scope.row.id)">
+                                        详细信息
+                                    </el-button>
+                                    <el-button link type="primary" size="small" :disabled="scope.row.status === '离线'"
+                                        @click="openTerminal(scope.row.id)">终端</el-button>
+                                </div>
+                                <div class="container-2">
+                                    <el-button link type="primary" size="small">编辑配置</el-button>
+                                    <el-button link type="primary" size="small" :disabled="scope.row.status === '离线'"
+                                        @click="shutdownById(scope.row.id)">关机</el-button>
+                                </div>
+                            </div>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-main>
+            <el-footer>
+                <div class="footer-container" style="width: 100%; display: flex; justify-content: center;">
+                    <el-pagination background layout="prev, pager, next" :total="totalSize" :page-size="pageSize"
+                        :current-page="currentPage" @current-change="getList(pageSize, currentPage)" />
+                </div>
+            </el-footer>
+        </el-container>
+    </div>
+
+    <!-- 关闭所有服务器对话框 -->
+    <el-dialog v-model="shutdownAllServerDialogVisible" title="⚠警告: 您正在进行关闭所有服务器操作" width="500" align-center>
+        <div class="text">
+            <el-input v-model="shutdownAllServerDialogInput" placeholder="请输入: '我确认关闭所有服务器' 来确认关闭服务器" />
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="shutdownAllServerDialogVisible = false">取消</el-button>
+                <el-button type="danger" :disabled="shutdownAllServerDialogInput !== '我确认关闭所有服务器'"
+                    @click="confirmShutDown">
+                    关闭
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
+</template>
+
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue'
+import { Search } from '@element-plus/icons-vue'
+import type { ServerInfo } from '@/api/entity'
+import { getServersList, updateHardwareInfoByIds, getServerInfoList, closeServerById } from '@/api/serverAPI'
+import router from '@/router';
+import type { Ref } from 'vue';
+import { ElMessage } from 'element-plus';
+
+const shutdownAllServerDialogInput = ref('');
+const shutdownAllServerDialogVisible = ref(false);
+const searchInput = ref('');
+
+const refreshTime = ref(60);
+
+// 分页大小
+const pageSize = ref(10);
+// 条目数
+const totalSize = ref(0);
+// 当前页
+const currentPage = ref(1);
+
+// 根据id关闭服务器
+const shutdownById = (id: number) => {
+    closeServerById(id).then((resp) => {
+        if (resp.data.status == 200) {
+            ElMessage.success("关闭成功");
+            getList(pageSize.value, currentPage.value);
+        }
+    })
+}
+
+// 点击打开终端按钮
+const openTerminal = (id: number) => {
+    router.push({ path: "/terminal", query: { serverId: id } })
+}
+
+// 点击新建按钮
+const clickNew = () => {
+    router.push("/add");
+}
+
+// 获取服务器列表
+const getList = (size: number, no: number) => {
+    getServersList(size, no).then((resp) => {
+        if (resp.data.status == 200) {
+            tableData.value = resp.data.data.data;
+            totalSize.value = resp.data.data.total;
+            pageSize.value = resp.data.data.pageSize;
+            currentPage.value = resp.data.data.currentPage;
+        }
+    })
+}
+
+
+// 详细信息界面
+const clickGoToServerDetails = (serverId: number) => {
+    router.push({ path: "/serverDetails", query: { serverId: serverId } })
+}
+
+// 刷新当前界面信息
+const refresh = () => {
+    const ids: number[] = []
+    for (let i = 0; i < tableData.value.length; i++) {
+        ids.push(tableData.value[i].id)
+    };
+    updateHardwareInfoByIds(ids).then((resp) => {
+        if (resp.data.status == 200) {
+            tableData.value = resp.data.data;
+            ElMessage.success(`刷新成功`);
+        }
+    });
+}
+
+
+// 根据id获取服务器信息
+const lightResh = () => {
+    const ids: number[] = []
+    for (let i = 0; i < tableData.value.length; i++) {
+        ids.push(tableData.value[i].id)
+    };
+    getServerInfoList(ids).then((resp) => {
+        if (resp.data.status == 200) {
+            tableData.value = resp.data.data;
+            ElMessage.success(`刷新成功`);
+        }
+    });
+}
+
+
+const customColors = [
+    { color: 'green', percentage: 40 },
+    { color: '#409eff', percentage: 75 },
+    { color: '#e6a23c', percentage: 90 },
+    { color: 'red', percentage: 100 },
+]
+
+const multipleSelection = ref<ServerInfo[]>([])
+
+const handleSelectionChange = (val: ServerInfo[]) => {
+    multipleSelection.value = val
+}
+
+const tableData: Ref<ServerInfo[]> = ref([])
+
+//  关闭所有服务器对话框
+const confirmShutDown = () => {
+    shutdownAllServerDialogVisible.value = false
+}
+
+onMounted(() => {
+    getList(10, 1);
+
+    // 定时刷新当前界面信息
+    setInterval(() => {
+        refreshTime.value -= 1;
+        if (refreshTime.value <= 0) {
+            refreshTime.value = 60;
+            lightResh();
+        }
+    }, 1000);
+});
+</script>
+
+<style lang="css" scoped>
+.common-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+el-main {
+    flex: 1;
+}
+
+el-footer {
+    text-align: center;
+    padding: 20px 0;
+}
+</style>

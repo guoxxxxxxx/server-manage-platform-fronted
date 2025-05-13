@@ -1,18 +1,32 @@
 const baseURL = "http://127.0.0.1:31500/api/"
+export const baseWebsocketUrl = "ws://127.0.0.1:31500/api/websocket/";
 
 import router from "@/router";
 import axios from "axios";
 import { ElMessage } from "element-plus";
-import { ro } from "element-plus/es/locales.mjs";
+import { useStore } from "@/stores";
 
 // 创建axios实例
 const baseRequest = axios.create({
   baseURL,
-  timeout: 1000 * 3,
+  timeout: 1000 * 10,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+
+// 请求拦截器
+baseRequest.interceptors.request.use((config) => {
+    const store = useStore();
+    const token = store.getToken(); // 获取token
+    if (token && token.length > 0) {
+        config.headers['token'] = token; // 设置请求头携带token
+    }
+    return config;
+}, error => {
+    return Promise.reject(error);
+})
 
 
 // 响应拦截器
