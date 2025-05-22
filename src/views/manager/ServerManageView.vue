@@ -15,6 +15,7 @@
                         <div class="shudown">
                             <el-button type="danger" size="small"
                                 @click="shutdownAllServerDialogVisible = true">关闭所有服务器</el-button>
+                            <el-button size="small" @click="cancelShutdownAllServerDialogVisible = true">取消关闭所有服务器</el-button>
                             <el-button type="success" size="small" @click="refresh">立即刷新</el-button>
                             <el-button type="primary" size="small" @click="clickNew">新建</el-button>
                         </div>
@@ -135,8 +136,23 @@
             <div class="dialog-footer">
                 <el-button @click="shutdownAllServerDialogVisible = false">取消</el-button>
                 <el-button type="danger" :disabled="shutdownAllServerDialogInput !== '我确认关闭所有服务器'"
-                    @click="confirmShutDown">
+                    @click="confirmShutDown([])">
                     关闭
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
+
+    <!-- 取消关闭所有服务器对话框 -->
+    <el-dialog v-model="cancelShutdownAllServerDialogVisible" title="取消关闭所有服务器" width="500" align-center>
+        <div class="text" style="margin-top: -20px;">
+            确认取消关闭所有服务器吗？
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="cancelShutdownAllServerDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="cancelShutdown([])">
+                    确定
                 </el-button>
             </div>
         </template>
@@ -149,7 +165,7 @@ import { Search } from '@element-plus/icons-vue'
 import type { ServerInfo } from '@/api/entity'
 import {
     getServersList, updateHardwareInfoByIds, getServerInfoList, closeServerById, rebootById,
-    cancelShutdownById, shutdownByIds
+    cancelShutdownById, shutdownByIds, cancelShutdownByIds
 } from '@/api/serverAPI'
 import router from '@/router';
 import type { Ref } from 'vue';
@@ -157,6 +173,7 @@ import { ElMessage } from 'element-plus';
 
 const shutdownAllServerDialogInput = ref('');
 const shutdownAllServerDialogVisible = ref(false);
+const cancelShutdownAllServerDialogVisible = ref(false);
 const searchInput = ref('');
 
 const refreshTime = ref(60);
@@ -271,16 +288,15 @@ const multipleSelection = ref<ServerInfo[]>([])
 const handleSelectionChange = (val: ServerInfo[]) => {
     multipleSelection.value = val
     console.log(val);
-    
+
 }
 
 const tableData: Ref<ServerInfo[]> = ref([])
 
-//  关闭所有服务器对话框
-const confirmShutDown = () => {
-    shutdownByIds([]).then((resp) => {
+//  关闭指定的服务器
+const confirmShutDown = (serverIdList: number[] | null) => {
+    shutdownByIds(serverIdList).then((resp) => {
         if (resp.data.status == 200) {
-            console.log(resp.data.data);
             ElMessage.success("关闭所有服务器成功!");
             getList(pageSize.value, currentPage.value);
         }
@@ -288,6 +304,17 @@ const confirmShutDown = () => {
     shutdownAllServerDialogVisible.value = false
 }
 
+
+// 取消关闭指定的服务器
+const cancelShutdown = (serverIdList: number[] | null) => {
+    cancelShutdownByIds(serverIdList).then((resp) => {
+        if (resp.data.status == 200) {
+            ElMessage.success("取消关闭所有服务器成功!");
+            getList(pageSize.value, currentPage.value);
+        }
+    })
+    cancelShutdownAllServerDialogVisible.value = false
+}
 // 防止定时任务被重复启动
 let intervalId: number | null = null;
 

@@ -60,7 +60,13 @@ export const rebootById = (serverId: number) => {
 }
 
 
-// 关闭所有服务器
+// 通过id关闭服务器，若列表为空则默认关闭所有服务器
 export const shutdownByIds = (serverIdList: number[] | null) => {
     return baseRequest.post("/serverInfo/shutdownByIds", serverIdList);
+}
+
+
+// 通过id取消关闭服务器，若列表为空则默认取消关闭所有服务器
+export const cancelShutdownByIds = (serverIdList: number[] | null) => {
+    return baseRequest.post("/serverInfo/cancelShutdownByIds", serverIdList);
 }
