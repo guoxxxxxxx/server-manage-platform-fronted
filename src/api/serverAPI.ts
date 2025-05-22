@@ -1,3 +1,4 @@
+import { server } from "typescript";
 import baseRequest from "./baseRequest";
 import type { ServerInfo } from "@/api/entity"
 
@@ -44,4 +45,22 @@ export const updateHardwareInfoByIds = (ids: number[]) => {
 // 根据ids关闭服务器
 export const closeServerById = (serverId: number) => {
     return baseRequest.post("/serverInfo/shutdownById", serverId);
+}
+
+
+// 根据id取消关闭服务器
+export const cancelShutdownById = (serverId: number) => {
+    return baseRequest.post("/serverInfo/cancelShutdownById", serverId);
+}
+
+
+// 重启服务器
+export const rebootById = (serverId: number) => {
+    return baseRequest.post("/serverInfo/rebootById", serverId);
+}
+
+
+// 关闭所有服务器
+export const shutdownByIds = (serverIdList: number[] | null) => {
+    return baseRequest.post("/serverInfo/shutdownByIds", serverIdList);
 }

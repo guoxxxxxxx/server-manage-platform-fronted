@@ -39,6 +39,7 @@ export interface ServerInfo {
     owner: string | null,
     note: string | null,
     port: string | null,
+    pwdIsCorrect: boolean | null,
 }
 
 // socketMessage 交互实体

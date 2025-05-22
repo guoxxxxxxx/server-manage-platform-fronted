@@ -54,7 +54,7 @@
 
             <el-descriptions-item label="磁盘空间">
                 <el-progress :percentage="(100.0 - serverInfo.freeDiskSpace * 100 / serverInfo.diskSpace).toFixed(1)"
-                    :format="format" />
+                    :format="format" :color="serverInfo.status === '离线' ? '#ccc' : customColors" />
                 已使用: {{ ((serverInfo.diskSpace - serverInfo.freeDiskSpace) / 1024 / 1024).toFixed(2) }}GB /
                 总容量: {{ (serverInfo.diskSpace / 1024 / 1024).toFixed(2) }}GB
             </el-descriptions-item>
@@ -62,7 +62,7 @@
             <el-descriptions-item label="内存使用">
                 <el-progress
                     :percentage="(100.0 - serverInfo.freeMemorySpace * 100 / serverInfo.memorySpace).toFixed(1)"
-                    :format="format" />
+                    :format="format" :color="serverInfo.status === '离线' ? '#ccc' : customColors"/>
                 已使用: {{ ((serverInfo.memorySpace - serverInfo.freeMemorySpace) / 1024 / 1024).toFixed(2) }}GB /
                 总容量: {{ (serverInfo.memorySpace / 1024 / 1024).toFixed(2) }}GB
             </el-descriptions-item>
@@ -88,6 +88,12 @@ import { ElMessage } from 'element-plus'
 import { getServerInfo } from '@/api/serverAPI'
 import { useRoute } from 'vue-router';
 
+const customColors = [
+    { color: 'green', percentage: 40 },
+    { color: '#409eff', percentage: 75 },
+    { color: '#e6a23c', percentage: 90 },
+    { color: 'red', percentage: 100 },
+]
 
 const isEditing = ref(false)
 

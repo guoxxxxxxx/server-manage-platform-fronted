@@ -26,7 +26,26 @@
                 <el-table :data="tableData" style="width: 100%" row-key="id" @selection-change="handleSelectionChange">
                     <el-table-column fixed="left" type="selection" width="55" />
                     <el-table-column prop="id" label="id" width="60" />
-                    <el-table-column prop="name" label="主机名" width="120" />
+                    <el-table-column prop="name" label="主机名" width="120">
+                        <template #default="scope">
+                            <div style="position: relative; display: inline-block;" v-if="!scope.row.pwdIsCorrect">
+                                <el-tag size="small" style="
+                                            transform: scale(0.8);
+                                            border-radius: 5px;
+                                            border: 1px solid #8b0000;
+                                            background-color: transparent;
+                                            color: #8b0000;
+                                            font-size: 16px;
+                                            font-weight: bold;
+                                            ">
+                                    密码错误
+                                </el-tag>
+                                <div style="height: 100%; align-content: center; width: 100%; text-align: center;">
+                                    {{ scope.row.name }}
+                                </div>
+                            </div>
+                        </template>
+                    </el-table-column>
                     <el-table-column prop="ip" label="主机ip" width="150" />
                     <el-table-column prop="operatingSystem" label="操作系统" width="200" />
                     <el-table-column prop="location" label="地点" width="120" />
@@ -35,19 +54,23 @@
                         <template #default="scope">
                             <el-progress type="dashboard"
                                 :percentage="(100.0 - scope.row.freeDiskSpace * 100 / scope.row.diskSpace).toFixed(1)"
-                                :color="scope.row.status === '离线' ? '#ccc' : customColors" width="60" />
+                                :color="(scope.row.status === '离线' || !scope.row.pwdIsCorrect) ? '#ccc' : customColors"
+                                width="60" />
                         </template>
                     </el-table-column>
                     <el-table-column label="内存" max-width="100">
                         <template #default="scope">
                             <el-progress type="dashboard"
                                 :percentage="(100.0 - scope.row.freeMemorySpace * 100 / scope.row.memorySpace).toFixed(1)"
-                                :color="scope.row.status === '离线' ? '#ccc' : customColors" width="60" />
+                                :color="(scope.row.status === '离线' || !scope.row.pwdIsCorrect) ? '#ccc' : customColors"
+                                width="60" />
                         </template>
                     </el-table-column>
                     <el-table-column prop="status" label="状态" width="110">
                         <template #default="scope">
-                            <el-tag :type="scope.row.status === '在线' ? 'success' : 'info'">{{ scope.row.status
+                            <el-tag
+                                :type="scope.row.status === '在线' ? 'success' : scope.row.status === '离线' ? 'info' : 'warning'">{{
+                                    scope.row.status
                                 }}</el-tag>
                         </template>
                     </el-table-column>
@@ -56,17 +79,35 @@
                         <template #default="scope">
                             <div class="container">
                                 <div class="container-1">
+
+                                    <el-button link type="primary" size="small" :disabled="scope.row.status === '离线'"
+                                        @click="openTerminal(scope.row.id)">终端</el-button>
                                     <el-button link type="primary" size="small"
                                         @click="clickGoToServerDetails(scope.row.id)">
                                         详细信息
                                     </el-button>
-                                    <el-button link type="primary" size="small" :disabled="scope.row.status === '离线'"
-                                        @click="openTerminal(scope.row.id)">终端</el-button>
                                 </div>
                                 <div class="container-2">
-                                    <el-button link type="primary" size="small">编辑配置</el-button>
-                                    <el-button link type="primary" size="small" :disabled="scope.row.status === '离线'"
-                                        @click="shutdownById(scope.row.id)">关机</el-button>
+                                    <el-popconfirm title="确认重启吗?" @confirm="rebootById_(scope.row.id)"
+                                        v-if="scope.row.status === '在线'">
+                                        <template #reference>
+                                            <el-button link type="primary" size="small"
+                                                :disabled="scope.row.status === '离线'">重启</el-button>
+                                        </template>
+                                    </el-popconfirm>
+                                    <el-popconfirm title="确认关机吗?" @confirm="shutdownById(scope.row.id)"
+                                        v-if="scope.row.status === '在线'">
+                                        <template #reference>
+                                            <el-button link type="danger" size="small"
+                                                :disabled="scope.row.status === '离线'">关机</el-button>
+                                        </template>
+                                    </el-popconfirm>
+                                    <el-popconfirm title="确认取消关机吗?" @confirm="cancelShutdownById_(scope.row.id)"
+                                        v-if="scope.row.status === '60s内关机'">
+                                        <template #reference>
+                                            <el-button link type="success" size="small">取消关机</el-button>
+                                        </template>
+                                    </el-popconfirm>
                                 </div>
                             </div>
                         </template>
@@ -84,8 +125,11 @@
 
     <!-- 关闭所有服务器对话框 -->
     <el-dialog v-model="shutdownAllServerDialogVisible" title="⚠警告: 您正在进行关闭所有服务器操作" width="500" align-center>
+        <div class="text" style="margin-top: -20px;">
+            请输入: '我确认关闭所有服务器' 来确认关闭服务器
+        </div>
         <div class="text">
-            <el-input v-model="shutdownAllServerDialogInput" placeholder="请输入: '我确认关闭所有服务器' 来确认关闭服务器" />
+            <el-input v-model="shutdownAllServerDialogInput" placeholder="我确认关闭所有服务器" />
         </div>
         <template #footer>
             <div class="dialog-footer">
@@ -103,7 +147,10 @@
 import { ref, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { ServerInfo } from '@/api/entity'
-import { getServersList, updateHardwareInfoByIds, getServerInfoList, closeServerById } from '@/api/serverAPI'
+import {
+    getServersList, updateHardwareInfoByIds, getServerInfoList, closeServerById, rebootById,
+    cancelShutdownById, shutdownByIds
+} from '@/api/serverAPI'
 import router from '@/router';
 import type { Ref } from 'vue';
 import { ElMessage } from 'element-plus';
@@ -125,8 +172,31 @@ const currentPage = ref(1);
 const shutdownById = (id: number) => {
     closeServerById(id).then((resp) => {
         if (resp.data.status == 200) {
-            ElMessage.success("关闭成功");
+            ElMessage.success("服务器将在60s后关闭!");
             getList(pageSize.value, currentPage.value);
+        }
+    })
+}
+
+// 根据id取消关闭服务器
+const cancelShutdownById_ = (id: number) => {
+    cancelShutdownById(id).then((resp) => {
+        if (resp.data.status == 200) {
+            ElMessage.success("取消服务器关闭成功!");
+            getList(pageSize.value, currentPage.value);
+        }
+    })
+}
+
+// 根据id重启服务器
+const rebootById_ = (id: number) => {
+    rebootById(id).then((resp) => {
+        if (resp.data.data) {
+            ElMessage.success("重启成功!");
+            getList(pageSize.value, currentPage.value);
+        }
+        else {
+            ElMessage.warning("重启失败!");
         }
     })
 }
@@ -200,26 +270,40 @@ const multipleSelection = ref<ServerInfo[]>([])
 
 const handleSelectionChange = (val: ServerInfo[]) => {
     multipleSelection.value = val
+    console.log(val);
+    
 }
 
 const tableData: Ref<ServerInfo[]> = ref([])
 
 //  关闭所有服务器对话框
 const confirmShutDown = () => {
+    shutdownByIds([]).then((resp) => {
+        if (resp.data.status == 200) {
+            console.log(resp.data.data);
+            ElMessage.success("关闭所有服务器成功!");
+            getList(pageSize.value, currentPage.value);
+        }
+    })
     shutdownAllServerDialogVisible.value = false
 }
+
+// 防止定时任务被重复启动
+let intervalId: number | null = null;
 
 onMounted(() => {
     getList(10, 1);
 
-    // 定时刷新当前界面信息
-    setInterval(() => {
-        refreshTime.value -= 1;
-        if (refreshTime.value <= 0) {
-            refreshTime.value = 60;
-            lightResh();
-        }
-    }, 1000);
+    if (intervalId === null) {
+        // 定时刷新当前界面信息
+        intervalId = setInterval(() => {
+            refreshTime.value -= 1;
+            if (refreshTime.value <= 0) {
+                refreshTime.value = 60;
+                lightResh();
+            }
+        }, 1000);
+    }
 });
 </script>
 
