@@ -7,6 +7,10 @@
                     <div class="left">
                         <el-input v-model="searchInput" style="width: 240px" placeholder="Please Input"
                             :suffix-icon="Search" />
+                        <el-button type="danger" size="small" @click="confirmShutdownSelectedServerDialogVisible = true"
+                            style="margin-left: 10px;" v-if="showSelectedServerButton">关闭选中服务器</el-button>
+                        <el-button type="primary" size="small" @click="cancelShutdownSelectedServerDialogVisible = true"
+                            style="margin-left: 10px;" v-if="showSelectedServerButton">取消关闭选中服务器</el-button>
                     </div>
                     <div class="right" style="display: flex;">
                         <div class="refresh" style="margin-right: 30px;">
@@ -15,7 +19,8 @@
                         <div class="shudown">
                             <el-button type="danger" size="small"
                                 @click="shutdownAllServerDialogVisible = true">关闭所有服务器</el-button>
-                            <el-button size="small" @click="cancelShutdownAllServerDialogVisible = true">取消关闭所有服务器</el-button>
+                            <el-button size="small"
+                                @click="cancelShutdownAllServerDialogVisible = true">取消关闭所有服务器</el-button>
                             <el-button type="success" size="small" @click="refresh">立即刷新</el-button>
                             <el-button type="primary" size="small" @click="clickNew">新建</el-button>
                         </div>
@@ -55,7 +60,7 @@
                         <template #default="scope">
                             <el-progress type="dashboard"
                                 :percentage="(100.0 - scope.row.freeDiskSpace * 100 / scope.row.diskSpace).toFixed(1)"
-                                :color="(scope.row.status === '离线' || !scope.row.pwdIsCorrect) ? '#ccc' : customColors"
+                                :color="(scope.row.status === '离线' || !scope.row.pwdIsCorrect || scope.row.status === '重启中') ? '#ccc' : customColors"
                                 width="60" />
                         </template>
                     </el-table-column>
@@ -63,7 +68,7 @@
                         <template #default="scope">
                             <el-progress type="dashboard"
                                 :percentage="(100.0 - scope.row.freeMemorySpace * 100 / scope.row.memorySpace).toFixed(1)"
-                                :color="(scope.row.status === '离线' || !scope.row.pwdIsCorrect) ? '#ccc' : customColors"
+                                :color="(scope.row.status === '离线' || !scope.row.pwdIsCorrect || scope.row.status === '重启中') ? '#ccc' : customColors"
                                 width="60" />
                         </template>
                     </el-table-column>
@@ -157,10 +162,41 @@
             </div>
         </template>
     </el-dialog>
+
+    <!-- 关闭选中服务器 -->
+    <el-dialog v-model="confirmShutdownSelectedServerDialogVisible" title="关闭选中服务器" width="500" align-center>
+        <div class="text" style="margin-top: -20px;">
+            确定关闭选中服务器吗？
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="confirmShutdownSelectedServerDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="shutdownSelectedServer">
+                    确定
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
+
+
+    <!-- 取消关闭选中服务器 -->
+    <el-dialog v-model="cancelShutdownSelectedServerDialogVisible" title="取消关闭选中服务器" width="500" align-center>
+        <div class="text" style="margin-top: -20px;">
+            确定取消关闭选中服务器吗？
+        </div>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="cancelShutdownSelectedServerDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="cancelShutdownSelectedServer">
+                    确定
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { ServerInfo } from '@/api/entity'
 import {
@@ -174,6 +210,8 @@ import { ElMessage } from 'element-plus';
 const shutdownAllServerDialogInput = ref('');
 const shutdownAllServerDialogVisible = ref(false);
 const cancelShutdownAllServerDialogVisible = ref(false);
+const confirmShutdownSelectedServerDialogVisible = ref(false);
+const cancelShutdownSelectedServerDialogVisible = ref(false);
 const searchInput = ref('');
 
 const refreshTime = ref(60);
@@ -184,6 +222,9 @@ const pageSize = ref(10);
 const totalSize = ref(0);
 // 当前页
 const currentPage = ref(1);
+
+// 是否显示关闭选中服务器按钮
+const showSelectedServerButton = ref(false);
 
 // 根据id关闭服务器
 const shutdownById = (id: number) => {
@@ -199,7 +240,7 @@ const shutdownById = (id: number) => {
 const cancelShutdownById_ = (id: number) => {
     cancelShutdownById(id).then((resp) => {
         if (resp.data.status == 200) {
-            ElMessage.success("取消服务器关闭成功!");
+            ElMessage.success("取消成功!");
             getList(pageSize.value, currentPage.value);
         }
     })
@@ -285,9 +326,11 @@ const customColors = [
 
 const multipleSelection = ref<ServerInfo[]>([])
 
+
+
 const handleSelectionChange = (val: ServerInfo[]) => {
     multipleSelection.value = val
-    console.log(val);
+    console.log(multipleSelection.value);
 
 }
 
@@ -297,7 +340,7 @@ const tableData: Ref<ServerInfo[]> = ref([])
 const confirmShutDown = (serverIdList: number[] | null) => {
     shutdownByIds(serverIdList).then((resp) => {
         if (resp.data.status == 200) {
-            ElMessage.success("关闭所有服务器成功!");
+            ElMessage.success("关闭成功!");
             getList(pageSize.value, currentPage.value);
         }
     })
@@ -305,16 +348,40 @@ const confirmShutDown = (serverIdList: number[] | null) => {
 }
 
 
+// 关闭选中服务器
+const shutdownSelectedServer = () => {
+    let ids: number[] = [];
+    for (let i = 0; i < multipleSelection.value.length; i++) {
+        ids.push(multipleSelection.value[i].id);
+    }
+    confirmShutDown(ids);
+    confirmShutdownSelectedServerDialogVisible.value = false;
+}
+
+
 // 取消关闭指定的服务器
 const cancelShutdown = (serverIdList: number[] | null) => {
     cancelShutdownByIds(serverIdList).then((resp) => {
         if (resp.data.status == 200) {
-            ElMessage.success("取消关闭所有服务器成功!");
+            ElMessage.success("取消成功!");
             getList(pageSize.value, currentPage.value);
         }
     })
     cancelShutdownAllServerDialogVisible.value = false
 }
+
+
+// 取消关闭选中服务器
+const cancelShutdownSelectedServer = () => {
+    let ids: number[] = [];
+    for (let i = 0; i < multipleSelection.value.length; i++) {
+        ids.push(multipleSelection.value[i].id);
+    }
+    cancelShutdown(ids);
+    cancelShutdownSelectedServerDialogVisible.value = false;
+}
+
+
 // 防止定时任务被重复启动
 let intervalId: number | null = null;
 
@@ -332,6 +399,15 @@ onMounted(() => {
         }, 1000);
     }
 });
+
+watch(() => multipleSelection.value.length, (newLength) => {
+    if (newLength > 0) {
+        showSelectedServerButton.value = true;
+    }
+    else {
+        showSelectedServerButton.value = false;
+    }
+})
 </script>
 
 <style lang="css" scoped>
