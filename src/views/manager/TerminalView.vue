@@ -52,6 +52,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { baseWebsocketUrl } from '@/api/baseRequest'
 import 'xterm/css/xterm.css';
 import { useStore } from '@/stores';
+import { ElMessage } from 'element-plus';
 
 const pinia = useStore();
 
@@ -140,6 +141,9 @@ const addTab = async (host, port, username, password, serverId) => {
             }
             else if (socketMessage.title === "FailMessage") {
                 term.write(socketMessage.message);
+            }
+            else if(socketMessage.title === "WarningMessage"){
+                ElMessage.warning(socketMessage.message)
             }
         }
     };

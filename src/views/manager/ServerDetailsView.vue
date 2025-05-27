@@ -2,7 +2,7 @@
     <div class="details-container">
         <div class="header">
             <h2>服务器详细信息</h2>
-            <el-button type="primary" @click="isEditing = !isEditing">
+            <el-button type="primary" @click="isEditing = !isEditing" :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
                 {{ isEditing ? '取消编辑' : '编辑' }}
             </el-button>
         </div>
@@ -35,6 +35,12 @@
             <el-form-item label="价格">
                 <el-input v-model="serverInfo.price" type="number" />
             </el-form-item>
+            <el-form-item label="登录用户名">
+                <el-input v-model="serverInfo.loginUsername"/>
+            </el-form-item>
+            <el-form-item label="登录密码">
+                <el-input v-model="serverInfo.loginPassword"/>
+            </el-form-item>
             <el-form-item label="备注">
                 <el-input v-model="serverInfo.note" type="textarea" />
             </el-form-item>
@@ -62,7 +68,7 @@
             <el-descriptions-item label="内存使用">
                 <el-progress
                     :percentage="(100.0 - serverInfo.freeMemorySpace * 100 / serverInfo.memorySpace).toFixed(1)"
-                    :format="format" :color="serverInfo.status === '离线' ? '#ccc' : customColors"/>
+                    :format="format" :color="serverInfo.status === '离线' ? '#ccc' : customColors" />
                 已使用: {{ ((serverInfo.memorySpace - serverInfo.freeMemorySpace) / 1024 / 1024).toFixed(2) }}GB /
                 总容量: {{ (serverInfo.memorySpace / 1024 / 1024).toFixed(2) }}GB
             </el-descriptions-item>
@@ -77,6 +83,25 @@
             <el-descriptions-item label="价格">¥{{ serverInfo.price }}</el-descriptions-item>
             <el-descriptions-item label="最后更新时间">{{ serverInfo.lastUpdate }}</el-descriptions-item>
 
+            <el-descriptions-item label="登录用户名:">{{ serverInfo.loginUsername }}</el-descriptions-item>
+            <el-descriptions-item label="登录密码:">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span>{{ showLoginPassword ? serverInfo.loginPassword : '******' }}</span>
+                    <el-icon v-if="showLoginPassword" @click="showLoginPassword = false">
+                        <View />
+                    </el-icon>
+                    <el-icon v-else @click="checkAuthorityAndGetLoginPassword">
+                        <Hide />
+                    </el-icon>
+                </div>
+            </el-descriptions-item>
+
+            <el-descriptions-item label="密码是否正确:">
+                <el-tag :type="serverInfo.pwdIsCorrect ? 'success' : 'danger'">{{ serverInfo.pwdIsCorrect ? '是' : '否'
+                    }}</el-tag>
+            </el-descriptions-item>
+
+
             <el-descriptions-item label="备注" :span="3">{{ serverInfo.note }}</el-descriptions-item>
         </el-descriptions>
     </div>
@@ -85,8 +110,9 @@
 <script setup lang="js">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getServerInfo } from '@/api/serverAPI'
+import { getServerInfo, updateServerInfoById } from '@/api/serverAPI'
 import { useRoute } from 'vue-router';
+import { Hide, View } from '@element-plus/icons-vue';
 
 const customColors = [
     { color: 'green', percentage: 40 },
@@ -99,6 +125,16 @@ const isEditing = ref(false)
 
 const serverInfo = ref({})
 
+const showLoginPassword = ref(false);
+
+const checkAuthorityAndGetLoginPassword = () => {
+    if (serverInfo.value.loginPassword == "当前用户权限不足!") {
+        ElMessage.error('当前用户权限不足!')
+    } else {
+        showLoginPassword.value = true
+    }
+}
+
 const format = (percentage) => {
     return `${percentage}%`
 }
@@ -107,7 +143,7 @@ const format = (percentage) => {
 // const currentRoute = useRoute();
 // 根据id获取服务器详细信息
 const getServerInfoById = (id) => {
-    if  (id === null) return;
+    if (id === null) return;
     getServerInfo(id).then(resp => {
         if (resp.data.status === 200) {
             serverInfo.value = resp.data.data;
@@ -116,9 +152,15 @@ const getServerInfoById = (id) => {
 }
 
 const handleSubmit = () => {
-    // TODO: 调用API更新服务器信息
-    ElMessage.success('更新成功')
-    isEditing.value = false
+    updateServerInfoById(serverInfo.value).then((resp) => {
+        if(resp.data.status === 200 && resp.data.data){
+            ElMessage.success('更新成功')
+            isEditing.value = false
+        }
+        else{
+            ElMessage.error('更新失败, 当前用户权限不足!')
+        }
+    })
 }
 
 onMounted(() => {

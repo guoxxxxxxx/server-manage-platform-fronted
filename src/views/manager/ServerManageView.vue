@@ -4,7 +4,7 @@
             <el-header>
                 <div class="header-container"
                     style="display: flex; justify-content: space-between; height: 60px; align-items: center;">
-                    <div class="left">
+                    <div class="left" style="display: flex;">
                         <el-input v-model="searchInput" style="width: 240px" placeholder="Please Input"
                             :suffix-icon="Search" />
                         <el-button type="danger" size="small" @click="confirmShutdownSelectedServerDialogVisible = true"
@@ -29,6 +29,13 @@
             </el-header>
             <el-divider style="margin: 5px;" />
             <el-main class="main-container">
+                <div class="setting-contianer">
+                    <div style="display: flex; align-items: center; margin-left: 20px;">
+                        <span style="font-size: 13px; color: #606266; margin-right: 8px;">仅显示在线服务器</span>
+                        <el-switch v-model="onlyShowOnlineServer" inline-prompt :active-icon="Check"
+                            :inactive-icon="Close" />
+                    </div>
+                </div>
                 <el-table :data="tableData" style="width: 100%" row-key="id" @selection-change="handleSelectionChange">
                     <el-table-column fixed="left" type="selection" width="55" />
                     <el-table-column prop="id" label="id" width="60" />
@@ -197,7 +204,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Check, Close } from '@element-plus/icons-vue'
 import type { ServerInfo } from '@/api/entity'
 import {
     getServersList, updateHardwareInfoByIds, getServerInfoList, closeServerById, rebootById,
@@ -222,6 +229,8 @@ const pageSize = ref(10);
 const totalSize = ref(0);
 // 当前页
 const currentPage = ref(1);
+// 显示的在线服务器
+const onlyShowOnlineServer = ref(false);
 
 // 是否显示关闭选中服务器按钮
 const showSelectedServerButton = ref(false);
@@ -270,8 +279,10 @@ const clickNew = () => {
 }
 
 // 获取服务器列表
-const getList = (size: number, no: number) => {
-    getServersList(size, no).then((resp) => {
+const getList = (size: number, no: number, ) => {
+    console.log(onlyShowOnlineServer.value);
+    
+    getServersList(size, no, searchInput.value, onlyShowOnlineServer.value).then((resp) => {
         if (resp.data.status == 200) {
             tableData.value = resp.data.data.data;
             totalSize.value = resp.data.data.total;
@@ -407,6 +418,11 @@ watch(() => multipleSelection.value.length, (newLength) => {
     else {
         showSelectedServerButton.value = false;
     }
+})
+
+// 监视搜索变量和是否显示在线变量
+watch(() => [searchInput.value, onlyShowOnlineServer.value], () => {
+    getList(pageSize.value, currentPage.value);
 })
 </script>
 

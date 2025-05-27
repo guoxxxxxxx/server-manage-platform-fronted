@@ -10,11 +10,13 @@ export const addServers = (serverInfo: any) => {
 
 
 // 分页获取服务器信息列表
-export const getServersList = (pageSize: number, pageNo: number) => {
+export const getServersList = (pageSize: number, pageNo: number, queryParams: any, isOnlyShowOnline: boolean) => {
     return baseRequest.get("/serverInfo/getPage", {
         params: {
-            pageSize,
-            pageNo
+            "pageSize": pageSize,
+            "pageNo": pageNo,
+            "queryParams": queryParams,
+            "onlyShowOnline": isOnlyShowOnline
         }
     });
 }
@@ -69,4 +71,10 @@ export const shutdownByIds = (serverIdList: number[] | null) => {
 // 通过id取消关闭服务器，若列表为空则默认取消关闭所有服务器
 export const cancelShutdownByIds = (serverIdList: number[] | null) => {
     return baseRequest.post("/serverInfo/cancelShutdownByIds", serverIdList);
+}
+
+
+// 根据id更新服务器信息
+export const updateServerInfoById = (serverInfo: ServerInfo) => {
+    return baseRequest.post("/serverInfo/updateServerInfoById", serverInfo);
 }
