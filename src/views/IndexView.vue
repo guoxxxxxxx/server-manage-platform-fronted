@@ -17,7 +17,7 @@
             <el-icon><Cpu /></el-icon>
             <span>服务器管理</span>
           </el-menu-item>
-          <el-menu-item index="3">
+          <el-menu-item index="/userManager">
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>

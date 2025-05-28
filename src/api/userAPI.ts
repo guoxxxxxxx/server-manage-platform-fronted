@@ -59,3 +59,30 @@ export const reset = (email: string, authCode: string, password: string) => {
         password: password
     })
 }
+
+
+// 根据用户id更改用户封禁信息
+export const toggleLockedById = (id: number) => {
+    return baseRequest.get("/user/toggleLockedById", {params:{
+        userId: id
+    }});
+}
+
+
+// 分页获取用户信息
+export const getUserList = (pageSize: number, pageNo: number, queryParams: any) => {
+    return baseRequest.post("/user/getUserList", {
+        pageSize: pageSize,
+        pageNo: pageNo,
+        queryParams: queryParams
+    });
+}
+
+
+// 根据用户id和角色id修改用户权限
+export const changeUserRole = (userId: number | null, roleId: number | string | null) => {
+    return baseRequest.post("/user/changeUserRole", {
+        targetUserId: userId,
+        roleId: roleId
+    });
+}

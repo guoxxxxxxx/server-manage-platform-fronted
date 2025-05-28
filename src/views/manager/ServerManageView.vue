@@ -88,6 +88,7 @@
                         </template>
                     </el-table-column>
                     <el-table-column prop="lastUpdate" label="上次更新时间" width="200" />
+                    <el-table-column prop="status" label="优先级" width="100" />
                     <el-table-column fixed="right" label="操作" min-width="120">
                         <template #default="scope">
                             <div class="container">
