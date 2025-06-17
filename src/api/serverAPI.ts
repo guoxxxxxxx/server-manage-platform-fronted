@@ -22,6 +22,20 @@ export const getServersList = (pageSize: number, pageNo: number, queryParams: an
 }
 
 
+// 分页获取服务器信息列表过滤白名单
+export const getServersListFilterWhite = (pageSize: number, pageNo: number, queryParams: any, isOnlyShowOnline: boolean) => {
+    return baseRequest.get("/serverInfo/getPage", {
+        params: {
+            "pageSize": pageSize,
+            "pageNo": pageNo,
+            "queryParams": queryParams,
+            "onlyShowOnline": isOnlyShowOnline,
+            "inWhite": true
+        }
+    });
+}
+
+
 // 根据serverId获取服务器详细信息
 export const getServerInfo = (id: number) => {
     return baseRequest.get("/serverInfo/getServerInfo", {
@@ -77,4 +91,30 @@ export const cancelShutdownByIds = (serverIdList: number[] | null) => {
 // 根据id更新服务器信息
 export const updateServerInfoById = (serverInfo: ServerInfo) => {
     return baseRequest.post("/serverInfo/updateServerInfoById", serverInfo);
+}
+
+
+// 获取所有服务器信息白名单
+export const getWhiteList = (isWhite: boolean) => {
+    return baseRequest.get("/serverInfo/getWhiteList", {
+        params: {
+            "isWhite": isWhite
+        }
+    });
+}
+
+
+// 添加白名单
+export const addWhiteList = (id: string) => {
+    return baseRequest.get("/serverInfo/addServer2White", {
+        params: {
+            "id": id
+        }
+    });
+}
+
+
+// 删除白名单
+export const removeWhite = (id: string) => {
+    return baseRequest.delete(`/serverInfo/removeWhite/${id}`)
 }

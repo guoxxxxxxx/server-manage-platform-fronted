@@ -21,7 +21,7 @@
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
-          <el-menu-item index="4">
+          <el-menu-item index="/settings">
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
           </el-menu-item>
@@ -30,9 +30,6 @@
 
       <el-main class="main">
         <router-view />
-         <!-- <ServerManageView></ServerManageView> -->
-          <!-- <AddServerView></AddServerView> -->
-        <!-- <TerminalComp></TerminalComp> -->
       </el-main>
     </el-container>
 
@@ -45,10 +42,6 @@
 <script lang="ts" setup>
 import { Monitor, Setting, User, Cpu } from '@element-plus/icons-vue'
 import TopBarComp from '@/components/TopBarComp.vue';
-import FootBarComp from '@/components/FootBarComp.vue';
-import ServerManageView from './manager/ServerManageView.vue';
-import AddServerView from './manager/AddServerView.vue';
-import TerminalComp from "@/views/manager/TerminalView.vue";
 
 </script>
 

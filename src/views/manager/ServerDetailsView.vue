@@ -2,7 +2,8 @@
     <div class="details-container">
         <div class="header">
             <h2>服务器详细信息</h2>
-            <el-button type="primary" @click="isEditing = !isEditing" :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
+            <el-button type="primary" @click="isEditing = !isEditing"
+                :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
                 {{ isEditing ? '取消编辑' : '编辑' }}
             </el-button>
         </div>
@@ -36,10 +37,13 @@
                 <el-input v-model="serverInfo.price" type="number" />
             </el-form-item>
             <el-form-item label="登录用户名">
-                <el-input v-model="serverInfo.loginUsername"/>
+                <el-input v-model="serverInfo.loginUsername" />
             </el-form-item>
             <el-form-item label="登录密码">
-                <el-input v-model="serverInfo.loginPassword"/>
+                <el-input v-model="serverInfo.loginPassword" />
+            </el-form-item>
+            <el-form-item label="关机优先级">
+                <el-input v-model="serverInfo.shutdownRank" />
             </el-form-item>
             <el-form-item label="备注">
                 <el-input v-model="serverInfo.note" type="textarea" />
@@ -95,12 +99,17 @@
                     </el-icon>
                 </div>
             </el-descriptions-item>
-
             <el-descriptions-item label="密码是否正确:">
                 <el-tag :type="serverInfo.pwdIsCorrect ? 'success' : 'danger'">{{ serverInfo.pwdIsCorrect ? '是' : '否'
-                    }}</el-tag>
+                }}</el-tag>
             </el-descriptions-item>
 
+            <el-descriptions-item label="当前状态">{{ serverInfo.status }}</el-descriptions-item>
+            <el-descriptions-item label="关机优先级">{{ serverInfo.shutdownRank }}</el-descriptions-item>
+            <el-descriptions-item label="是否在白名单中">
+                <el-tag :type="serverInfo.inWhite ? 'success' : 'warning'">{{ serverInfo.inWhite ? '是' : '否'
+                }}</el-tag>
+            </el-descriptions-item>
 
             <el-descriptions-item label="备注" :span="3">{{ serverInfo.note }}</el-descriptions-item>
         </el-descriptions>
@@ -153,11 +162,11 @@ const getServerInfoById = (id) => {
 
 const handleSubmit = () => {
     updateServerInfoById(serverInfo.value).then((resp) => {
-        if(resp.data.status === 200 && resp.data.data){
+        if (resp.data.status === 200 && resp.data.data) {
             ElMessage.success('更新成功')
             isEditing.value = false
         }
-        else{
+        else {
             ElMessage.error('更新失败, 当前用户权限不足!')
         }
     })

@@ -88,7 +88,15 @@
                         </template>
                     </el-table-column>
                     <el-table-column prop="lastUpdate" label="上次更新时间" width="200" />
-                    <el-table-column prop="status" label="优先级" width="100" />
+                    <el-table-column prop="shutdownRank" label="优先级" width="100">
+                        <template #default="scope">
+                            <div class="flex gap-2 mt-4">
+                                <el-tag type="warning" effect="light" round>
+                                    {{ scope.row.shutdownRank }}
+                                </el-tag>
+                            </div>
+                        </template>
+                    </el-table-column>
                     <el-table-column fixed="right" label="操作" min-width="120">
                         <template #default="scope">
                             <div class="container">
@@ -280,9 +288,9 @@ const clickNew = () => {
 }
 
 // 获取服务器列表
-const getList = (size: number, no: number, ) => {
+const getList = (size: number, no: number,) => {
     console.log(onlyShowOnlineServer.value);
-    
+
     getServersList(size, no, searchInput.value, onlyShowOnlineServer.value).then((resp) => {
         if (resp.data.status == 200) {
             tableData.value = resp.data.data.data;
