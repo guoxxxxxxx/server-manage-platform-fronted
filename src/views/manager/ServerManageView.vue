@@ -88,11 +88,11 @@
                         </template>
                     </el-table-column>
                     <el-table-column prop="lastUpdate" label="上次更新时间" width="200" />
-                    <el-table-column prop="shutdownRank" label="优先级" width="100">
+                    <el-table-column prop="shutdownDelayTime" label="关机延迟" width="100">
                         <template #default="scope">
                             <div class="flex gap-2 mt-4">
                                 <el-tag type="warning" effect="light" round>
-                                    {{ scope.row.shutdownRank }}
+                                    {{ scope.row.shutdownDelayTime }}分钟
                                 </el-tag>
                             </div>
                         </template>
@@ -125,7 +125,7 @@
                                         </template>
                                     </el-popconfirm>
                                     <el-popconfirm title="确认取消关机吗?" @confirm="cancelShutdownById_(scope.row.id)"
-                                        v-if="scope.row.status === '60s内关机'">
+                                        v-if="scope.row.status.includes('关机')">
                                         <template #reference>
                                             <el-button link type="success" size="small">取消关机</el-button>
                                         </template>

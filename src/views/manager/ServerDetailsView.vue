@@ -42,8 +42,8 @@
             <el-form-item label="登录密码">
                 <el-input v-model="serverInfo.loginPassword" />
             </el-form-item>
-            <el-form-item label="关机优先级">
-                <el-input v-model="serverInfo.shutdownRank" />
+            <el-form-item label="关机延迟时间">
+                <el-input v-model="serverInfo.shutdownDelayTime" />
             </el-form-item>
             <el-form-item label="备注">
                 <el-input v-model="serverInfo.note" type="textarea" />
@@ -105,7 +105,7 @@
             </el-descriptions-item>
 
             <el-descriptions-item label="当前状态">{{ serverInfo.status }}</el-descriptions-item>
-            <el-descriptions-item label="关机优先级">{{ serverInfo.shutdownRank }}</el-descriptions-item>
+            <el-descriptions-item label="关机延迟时间">{{ serverInfo.shutdownDelayTime }}分钟</el-descriptions-item>
             <el-descriptions-item label="是否在白名单中">
                 <el-tag :type="serverInfo.inWhite ? 'success' : 'warning'">{{ serverInfo.inWhite ? '是' : '否'
                 }}</el-tag>

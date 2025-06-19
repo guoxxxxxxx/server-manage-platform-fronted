@@ -118,3 +118,8 @@ export const addWhiteList = (id: string) => {
 export const removeWhite = (id: string) => {
     return baseRequest.delete(`/serverInfo/removeWhite/${id}`)
 }
+
+// 获取dashboard中关于服务器的信息
+export const getDashboardServerInfo = () => {
+    return baseRequest.get("/serverInfo/getDashboardInfo");
+}

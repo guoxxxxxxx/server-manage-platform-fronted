@@ -86,3 +86,15 @@ export const changeUserRole = (userId: number | null, roleId: number | string | 
         roleId: roleId
     });
 }
+
+
+// 获取最近登录用户
+export const getRecentLoginUsers = () => {
+    return baseRequest.get("/user/recentLoginUser");
+}
+
+
+// 获取dashboard中关于用户的信息
+export const getDashboardUserInfo = () => {
+    return baseRequest.get("/user/getDashboardInfo");
+}
