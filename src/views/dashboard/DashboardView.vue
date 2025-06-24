@@ -21,7 +21,7 @@
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card">
-          <div class="stat-title">今日活跃用户</div>
+          <div class="stat-title">近一周活跃用户</div>
           <div class="stat-value">{{ stats.activeUsers }}</div>
         </el-card>
       </el-col>

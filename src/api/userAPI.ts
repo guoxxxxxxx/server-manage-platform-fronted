@@ -98,3 +98,9 @@ export const getRecentLoginUsers = () => {
 export const getDashboardUserInfo = () => {
     return baseRequest.get("/user/getDashboardInfo");
 }
+
+
+// 根据id删除用户信息
+export const deleteUserById = (id: number) => {
+    return baseRequest.delete(`/user/${id}`);
+}

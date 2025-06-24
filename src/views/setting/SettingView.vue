@@ -95,8 +95,9 @@ const removeWhitelistIp = (id: string) => {
 // 添加白名单
 const addWhite = (id: any) => {
     addWhiteList(id).then((resp) => {
+        console.log(resp);
         if (resp.data.status == 200) {
-            if (resp.data.data.status) {
+            if (resp.data.data.data) {
                 ElMessage.success('添加成功')
                 getWhitelist_(true)
             }

@@ -45,7 +45,8 @@
       </div>
 
       <div style="width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 20px;">
-        <el-pagination background layout="prev, pager, next" :total="totalSize" />
+        <el-pagination background layout="prev, pager, next" :total="totalSize" :page-size="pageSize"
+          @change="handlePageChange" />
       </div>
     </el-card>
 
@@ -80,7 +81,7 @@
 <script lang="ts" setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { toggleLockedById, getUserList, changeUserRole } from '@/api/userAPI'
+import { toggleLockedById, getUserList, changeUserRole, deleteUserById } from '@/api/userAPI'
 import type { UserInfo } from "@/api/entity.ts"
 
 // 分页参数
@@ -124,11 +125,12 @@ function openEditDialog(row: UserInfo) {
 }
 
 
+
 // 更新用户权限信息
 function updateUserRole() {
   changeUserRole(form.id, form.roleId).then((resp) => {
     console.log(resp);
-    
+
     if (resp.data.status == 200) {
       ElMessage.success(`更新成功`);
       dialogVisible.value = false
@@ -137,9 +139,14 @@ function updateUserRole() {
   })
 }
 
+// 删除用户
 function deleteUser(id: number) {
-  users.value = users.value.filter(u => u.id !== id)
-  ElMessage.success('用户已删除')
+  deleteUserById(id).then((resp) => {
+    if (resp.data.status == 200) {
+      ElMessage.success(`删除成功`);
+      getUserPage()
+    }
+  })
 }
 
 // 更新用户封禁信息
@@ -156,15 +163,22 @@ function toggleStatus(row: UserInfo) {
 // 分页获取用户信息
 const getUserPage = () => {
   getUserList(pageSize.value, pageNo.value, queryParams.value).then((resp) => {
-    console.log(resp);
-    
     if (resp.data.status == 200) {
       users.value = resp.data.data.data;
       totalSize.value = resp.data.data.total;
       pageSize.value = resp.data.data.pageSize;
       pageNo.value = resp.data.data.currentPage;
+      console.log(resp.data.data);
+
     }
   })
+}
+
+
+// 分页
+const handlePageChange = (page: number) => {
+  pageNo.value = page;
+  getUserPage();
 }
 
 

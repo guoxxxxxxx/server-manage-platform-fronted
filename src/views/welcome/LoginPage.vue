@@ -63,7 +63,7 @@ const formRef = ref()
 const form = reactive({
   username: '',
   password: '',
-  remember: false
+  remember: true
 })
 
 const rules = {
@@ -87,7 +87,7 @@ function userLogin() {
           parseUserInfoByToken(resp.data.data).then((resp) => {
             if (resp.data.status == 200) {
               store.setCurrentUser(resp.data.data as UserInfo);
-              router.push("/");
+              router.push("/dashboard");
             }
           })
         }

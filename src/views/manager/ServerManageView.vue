@@ -139,7 +139,7 @@
             <el-footer>
                 <div class="footer-container" style="width: 100%; display: flex; justify-content: center;">
                     <el-pagination background layout="prev, pager, next" :total="totalSize" :page-size="pageSize"
-                        :current-page="currentPage" @current-change="getList(pageSize, currentPage)" />
+                        :current-page="currentPage" @current-change="handlePageChange"/>
                 </div>
             </el-footer>
         </el-container>
@@ -212,7 +212,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { Search, Check, Close } from '@element-plus/icons-vue'
 import type { ServerInfo } from '@/api/entity'
 import {
@@ -249,7 +249,7 @@ const shutdownById = (id: number) => {
     closeServerById(id).then((resp) => {
         if (resp.data.status == 200) {
             ElMessage.success("服务器将在60s后关闭!");
-            getList(pageSize.value, currentPage.value);
+            getList(currentPage.value);
         }
     })
 }
@@ -259,7 +259,7 @@ const cancelShutdownById_ = (id: number) => {
     cancelShutdownById(id).then((resp) => {
         if (resp.data.status == 200) {
             ElMessage.success("取消成功!");
-            getList(pageSize.value, currentPage.value);
+            getList(currentPage.value);
         }
     })
 }
@@ -269,7 +269,7 @@ const rebootById_ = (id: number) => {
     rebootById(id).then((resp) => {
         if (resp.data.data) {
             ElMessage.success("重启成功!");
-            getList(pageSize.value, currentPage.value);
+            getList(currentPage.value);
         }
         else {
             ElMessage.warning("重启失败!");
@@ -287,11 +287,14 @@ const clickNew = () => {
     router.push("/add");
 }
 
-// 获取服务器列表
-const getList = (size: number, no: number,) => {
-    console.log(onlyShowOnlineServer.value);
+const handlePageChange = (page: number) => {
+    currentPage.value = page;
+    getList(page);
+}
 
-    getServersList(size, no, searchInput.value, onlyShowOnlineServer.value).then((resp) => {
+// 获取服务器列表
+const getList = (no: number,) => {
+    getServersList(pageSize.value, no, searchInput.value, onlyShowOnlineServer.value).then((resp) => {
         if (resp.data.status == 200) {
             tableData.value = resp.data.data.data;
             totalSize.value = resp.data.data.total;
@@ -350,8 +353,6 @@ const multipleSelection = ref<ServerInfo[]>([])
 
 const handleSelectionChange = (val: ServerInfo[]) => {
     multipleSelection.value = val
-    console.log(multipleSelection.value);
-
 }
 
 const tableData: Ref<ServerInfo[]> = ref([])
@@ -361,7 +362,7 @@ const confirmShutDown = (serverIdList: number[] | null) => {
     shutdownByIds(serverIdList).then((resp) => {
         if (resp.data.status == 200) {
             ElMessage.success("关闭成功!");
-            getList(pageSize.value, currentPage.value);
+            getList(currentPage.value);
         }
     })
     shutdownAllServerDialogVisible.value = false
@@ -384,7 +385,7 @@ const cancelShutdown = (serverIdList: number[] | null) => {
     cancelShutdownByIds(serverIdList).then((resp) => {
         if (resp.data.status == 200) {
             ElMessage.success("取消成功!");
-            getList(pageSize.value, currentPage.value);
+            getList(currentPage.value);
         }
     })
     cancelShutdownAllServerDialogVisible.value = false
@@ -406,7 +407,7 @@ const cancelShutdownSelectedServer = () => {
 let intervalId: number | null = null;
 
 onMounted(() => {
-    getList(10, 1);
+    getList(1);
 
     if (intervalId === null) {
         // 定时刷新当前界面信息
@@ -431,7 +432,7 @@ watch(() => multipleSelection.value.length, (newLength) => {
 
 // 监视搜索变量和是否显示在线变量
 watch(() => [searchInput.value, onlyShowOnlineServer.value], () => {
-    getList(pageSize.value, currentPage.value);
+    getList(currentPage.value);
 })
 </script>
 
