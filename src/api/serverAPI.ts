@@ -123,3 +123,9 @@ export const removeWhite = (id: string) => {
 export const getDashboardServerInfo = () => {
     return baseRequest.get("/serverInfo/getDashboardInfo");
 }
+
+
+// 根据id删除服务器信息
+export const deleteServerInfoById = (id: number) => {
+    return baseRequest.delete(`/serverInfo/${id}`);
+}

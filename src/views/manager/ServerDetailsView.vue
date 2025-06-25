@@ -2,10 +2,28 @@
     <div class="details-container">
         <div class="header">
             <h2>服务器详细信息</h2>
-            <el-button type="primary" @click="isEditing = !isEditing"
-                :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
-                {{ isEditing ? '取消编辑' : '编辑' }}
-            </el-button>
+            <div>
+                <el-button type="primary" @click="isEditing = !isEditing"
+                    :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
+                    {{ isEditing ? '取消编辑' : '编辑' }}
+                </el-button>
+                <el-button type="danger" @click="dialogVisible = true">
+                    删除
+                </el-button>
+            </div>
+
+            <el-dialog v-model="dialogVisible" title="提示" width="500" :before-close="handleClose">
+                <span>确定删除吗？</span>
+                <template #footer>
+                    <div class="dialog-footer">
+                        <el-button @click="dialogVisible = false">取消</el-button>
+                        <el-button type="primary" @click="deleteServer">
+                            确定
+                        </el-button>
+                    </div>
+                </template>
+            </el-dialog>
+
         </div>
 
         <el-form v-if="isEditing" :model="serverInfo" label-width="120px">
@@ -119,9 +137,10 @@
 <script setup lang="js">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getServerInfo, updateServerInfoById } from '@/api/serverAPI'
+import { getServerInfo, updateServerInfoById, deleteServerInfoById } from '@/api/serverAPI'
 import { useRoute } from 'vue-router';
 import { Hide, View } from '@element-plus/icons-vue';
+import router from '@/router';
 
 const customColors = [
     { color: 'green', percentage: 40 },
@@ -130,6 +149,7 @@ const customColors = [
     { color: 'red', percentage: 100 },
 ]
 
+const dialogVisible = ref(false);
 const isEditing = ref(false)
 
 const serverInfo = ref({})
@@ -146,6 +166,16 @@ const checkAuthorityAndGetLoginPassword = () => {
 
 const format = (percentage) => {
     return `${percentage}%`
+}
+
+const deleteServer = () => {
+    deleteServerInfoById(serverInfo.value.id).then((resp) => {
+        if (resp.data.status == 200) {
+            ElMessage.success('删除成功!')
+            router.push('/manager')
+        }
+    })
+    dialogVisible = false;
 }
 
 // 获取路由参数

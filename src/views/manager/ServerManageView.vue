@@ -222,6 +222,7 @@ import {
 import router from '@/router';
 import type { Ref } from 'vue';
 import { ElMessage } from 'element-plus';
+import { onUnmounted } from 'vue';
 
 const shutdownAllServerDialogInput = ref('');
 const shutdownAllServerDialogVisible = ref(false);
@@ -418,6 +419,13 @@ onMounted(() => {
                 lightResh();
             }
         }, 1000);
+    }
+});
+
+onUnmounted(() => {
+    if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
     }
 });
 

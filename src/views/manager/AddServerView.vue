@@ -154,6 +154,7 @@ const submitForm = () => {
     addServers(serverForm.servers).then((resp) => {
         if (resp.data.status == 200 && resp.data.data.allSuccess) {
             ElMessage.success('添加成功')
+            router.push("/manager")
         }
         else {
             // 删除已经成功的信息，将未成功添加的信息在界面保留

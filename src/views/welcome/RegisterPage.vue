@@ -144,7 +144,7 @@ const register = () => {
             userRegister(form.username, form.password, form.email, form.code).then((resp) => {
                 if (resp.data.status == 200) {
                     ElMessage.success(`注册成功`)
-                    router.push("/")
+                    router.push("/dashboard")
                 }
             })
         }
