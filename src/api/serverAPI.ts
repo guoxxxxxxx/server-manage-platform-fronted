@@ -126,7 +126,7 @@ export const getDashboardServerInfo = () => {
 
 
 // 根据id删除服务器信息
-export const deleteServerInfoById = (id: number) => {
+export const deleteServerInfoById = (id: number | undefined | null) => {
     return baseRequest.delete(`/serverInfo/${id}`);
 }
 

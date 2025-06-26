@@ -12,7 +12,7 @@
 
         <div class="terminal-container" ref="terminalRef"></div>
 
-        <el-dialog title="🔗 新建连接" v-model="dialogVisible" width="400px" :before-close="handleClose"
+        <el-dialog title="🔗 新建连接" v-model="dialogVisible" width="400px"
             class="custom-dialog">
             <el-form :model="{ host, port, username, password }" label-position="top" class="connect-form">
                 <el-form-item label="服务器 IP">
@@ -43,203 +43,189 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import router from '@/router';
 import { ref, nextTick, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
-import { baseWebsocketUrl } from '@/api/baseRequest'
+import { baseWebsocketUrl } from '@/api/baseRequest';
 import 'xterm/css/xterm.css';
 import { useStore } from '@/stores';
 import { ElMessage } from 'element-plus';
 
-const pinia = useStore();
+interface Tab {
+  terminal: Terminal;
+  fitAddon: FitAddon;
+  socket: WebSocket;
+  heartbeat: number;
+  handleResize: () => void;
+}
 
-// 获取路由参数
+const pinia = useStore();
 const currentRoute = useRoute();
 
-const dialogVisible = ref(false)
+const dialogVisible = ref<boolean>(false);
+const terminalRef = ref<HTMLElement | null>(null);
 
-const terminalRef = ref(null);
+const tabs = ref<Tab[]>([]);
+const activeTab = ref<number>(0);
 
-const tabs = ref([]);
-const activeTab = ref(0);
+const host = ref<string>('192.168.247.149');
+const port = ref<string>('31500');
+const username = ref<string>('guox');
+const password = ref<string>('123456');
 
-const host = ref('192.168.247.149');
-const port = ref('31500');
-const username = ref('guox');
-const password = ref('123456');
+const addTab = async (
+  host?: string,
+  port?: string,
+  username?: string,
+  password?: string,
+  serverId?: string
+): Promise<void> => {
+  const term = new Terminal({
+    // rendererType: 'canvas',
+    convertEol: true,
+    scrollback: 10000,
+    disableStdin: false,
+    cursorStyle: 'block',
+    cursorBlink: true,
+    theme: {
+      foreground: '#f0f0f0',
+      background: '#1a1a1a',
+      cursor: '#ffffff',
+    //   selection: '#264f78',
+      black: '#000000',
+      red: '#e06c75',
+      green: '#98c379',
+      yellow: '#d19a66',
+      blue: '#61afef',
+      magenta: '#c678dd',
+      cyan: '#56b6c2',
+      white: '#abb2bf',
+    //   scrollbarThumb: '#444',
+    //   scrollbarTrack: '#1a1a1a'
+    },
+    lineHeight: 1.3,
+    fontFamily: 'Monaco, Consolas, monospace',
+    fontSize: 14,
+    letterSpacing: 0.8
+  });
 
-const addTab = async (host, port, username, password, serverId) => {
-    const term = new Terminal({
-        rendererType: "canvas",                               // 渲染类型
-        convertEol: true,                                     // 启用时，光标将设置为下一行的开头
-        scrollback: 10000,                                    // 终端中的回滚量，设置为10000行
-        disableStdin: false,                                  // 是否应禁用输入
-        cursorStyle: 'block',                                 // 光标样式 block
-        cursorBlink: true,                                    // 光标闪烁
-        theme: {
-            foreground: '#f0f0f0',                            // 前景色调亮
-            background: '#1a1a1a',                            // 背景色调整
-            cursor: '#ffffff',                                // 设置光标颜色
-            selection: '#264f78',                             // 选中文本的背景色
-            black: '#000000',
-            red: '#e06c75',
-            green: '#98c379',
-            yellow: '#d19a66',
-            blue: '#61afef',
-            magenta: '#c678dd',
-            cyan: '#56b6c2',
-            white: '#abb2bf',
-            scrollbarThumb: '#444',                           // 设置滚动条滑块颜色
-            scrollbarTrack: '#1a1a1a',                        // 设置滚动条轨道颜色
-        },
-        lineHeight: 1.3,                                      // 增加行高
-        fontFamily: 'Monaco, Consolas, monospace',            // 优化字体
-        fontSize: 14,                                         // 调整字号
-        letterSpacing: 0.8,                                   // 字符间距
-        scrollbar: {
-            background: '#1a1a1a',                            // 滚动条背景色
-            foreground: '#444',                               // 滚动条前景色
-        },
-    });
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
+  const fitAddon = new FitAddon();
+  term.loadAddon(fitAddon);
 
-    let url = null;
-    if (serverId == undefined) {
-        console.log('serverId is undefined');
-        
-        url = `ws://127.0.0.1:31500/api/websocket/ssh?host=${encodeURIComponent(
-            host
-        )}&port=${encodeURIComponent(port)}&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+  let url: string;
+  if (serverId === undefined) {
+    url = `ws://127.0.0.1:31500/api/websocket/ssh?host=${encodeURIComponent(
+      host ?? ''
+    )}&port=${encodeURIComponent(port ?? '')}&username=${encodeURIComponent(
+      username ?? ''
+    )}&password=${encodeURIComponent(password ?? '')}`;
+  } else {
+    url = `${baseWebsocketUrl}/autoAuthSsh?serverId=${serverId}&token=${pinia.getToken()}`;
+  }
+
+  const socket = new WebSocket(url);
+  socket.binaryType = 'arraybuffer';
+  dialogVisible.value = false;
+
+  socket.onopen = () => {
+    term.write('\r\n🟡 正在建立连接...\r\n');
+  };
+
+  socket.onmessage = (resp) => {
+    if (resp.data instanceof ArrayBuffer) {
+      const decoder = new TextDecoder('utf-8');
+      term.write(decoder.decode(resp.data));
+    } else if (typeof resp.data === 'string') {
+      const socketMessage = JSON.parse(resp.data);
+      if (socketMessage.title === 'ShellOut') {
+        term.write(socketMessage.message);
+      } else if (socketMessage.title === 'FailMessage') {
+        term.write(socketMessage.message);
+      } else if (socketMessage.title === 'WarningMessage') {
+        ElMessage.warning(socketMessage.message);
+      }
     }
-    else {
-        url = `${baseWebsocketUrl}/autoAuthSsh?serverId=${serverId}&token=${pinia.getToken()}`;
+  };
+
+  socket.onerror = (error: Event) => {
+    term.write(`\r\n🔴 连接错误\r\n`);
+  };
+
+  socket.onclose = () => {
+    term.write('\r\n🔴 连接已断开\r\n');
+  };
+
+  term.onData((data) => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(constructSocketMessage('USER_TEXT', data));
     }
+  });
 
+  const heartbeat = window.setInterval(() => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(constructSocketMessage('HEART_BEAT', 'HEART_BEAT'));
+    } else {
+      clearInterval(heartbeat);
+    }
+  }, 30000);
 
-    const socket = new WebSocket(url);
-    socket.binaryType = 'arraybuffer';
+  const handleResize = () => {
+    if (tabs.value.length === 0) return;
+    const currentTab = tabs.value[activeTab.value];
+    currentTab.fitAddon.fit();
+  };
 
-    dialogVisible.value = false;
+  window.addEventListener('resize', handleResize);
 
-    socket.onopen = () => {
-        term.write('\r\n🟡 正在建立连接...\r\n');
-    };
-
-    socket.onmessage = (resp) => {
-        if (resp.data instanceof ArrayBuffer) {
-            const decoder = new TextDecoder('utf-8');
-            const text = decoder.decode(resp.data);
-            term.write(text);
-        } else if (typeof resp.data === 'string') {
-            let socketMessage = JSON.parse(resp.data);
-            if (socketMessage.title === "ShellOut") {
-                term.write(socketMessage.message);
-            }
-            else if (socketMessage.title === "FailMessage") {
-                term.write(socketMessage.message);
-            }
-            else if(socketMessage.title === "WarningMessage"){
-                ElMessage.warning(socketMessage.message)
-            }
-        }
-    };
-
-    socket.onerror = (error) => {
-        term.write('\r\n🔴 连接错误: ' + error.message + '\r\n');
-    };
-
-    socket.onclose = () => {
-        term.write('\r\n🔴 连接已断开\r\n');
-    };
-
-    // 发送信息
-    term.onData((data) => {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(constructSocketMessage("USER_TEXT", data));
-        }
-    });
-
-    // 心跳检测
-    const heartbeat = setInterval(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(constructSocketMessage("HEART_BEAT", "HEART_BEAT"));
-        } else {
-            clearInterval(heartbeat);
-        }
-    }, 30000);
-
-    // 自适应窗口大小
-    const handleResize = () => {
-        if (tabs.value.length === 0) return;
-        const currentTab = tabs.value[activeTab.value];
-        currentTab.fitAddon.fit();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    tabs.value.push({
-        terminal: term,
-        fitAddon,
-        socket,
-        heartbeat,
-        handleResize,
-    });
-
-    activeTab.value = tabs.value.length - 1;
-    await renderActiveTerminal();
+  tabs.value.push({ terminal: term, fitAddon, socket, heartbeat, handleResize });
+  activeTab.value = tabs.value.length - 1;
+  await renderActiveTerminal();
 };
 
-// 构造信息实体
-const constructSocketMessage = (title, message) => {
-    const socketMessage = {
-        title: title,
-        message: message,
-        status: 200
-    };
-    return JSON.stringify(socketMessage);
+const constructSocketMessage = (title: string, message: string) => {
+  return JSON.stringify({ title, message, status: 200 });
 };
 
 const renderActiveTerminal = async () => {
-    await nextTick();
-    const currentTab = tabs.value[activeTab.value];
+  await nextTick();
+  const currentTab = tabs.value[activeTab.value];
+  if (terminalRef.value) {
     terminalRef.value.innerHTML = '';
     currentTab.terminal.open(terminalRef.value);
     currentTab.fitAddon.fit();
+  }
 };
 
-const switchTab = async (index) => {
-    activeTab.value = index;
-    await renderActiveTerminal();
+const switchTab = async (index: number) => {
+  activeTab.value = index;
+  await renderActiveTerminal();
 };
 
-const closeTab = (index) => {
-    const tab = tabs.value[index];
-    if (tab.socket && tab.socket.readyState === WebSocket.OPEN) {
-        tab.socket.close();
-    }
-    clearInterval(tab.heartbeat);
-    window.removeEventListener('resize', tab.handleResize);
-    tab.terminal.dispose();
-    tabs.value.splice(index, 1);
-    if (tabs.value.length > 0) {
-        activeTab.value = index === 0 ? 0 : index - 1;
-        renderActiveTerminal();
-    } else {
-        activeTab.value = 0;
-    }
+const closeTab = (index: number) => {
+  const tab = tabs.value[index];
+  if (tab.socket && tab.socket.readyState === WebSocket.OPEN) {
+    tab.socket.close();
+  }
+  clearInterval(tab.heartbeat);
+  window.removeEventListener('resize', tab.handleResize);
+  tab.terminal.dispose();
+  tabs.value.splice(index, 1);
+  if (tabs.value.length > 0) {
+    activeTab.value = index === 0 ? 0 : index - 1;
+    renderActiveTerminal();
+  } else {
+    activeTab.value = 0;
+  }
 };
 
 onMounted(() => {
-
-    // 判断路由是否传递了相关服务器的参数
-    const serverId = currentRoute.query.serverId;
-    if (serverId !== undefined) {
-        addTab(undefined, undefined, undefined, undefined, serverId);
-    }
+  const serverId = currentRoute.query.serverId as string;
+  if (serverId !== undefined) {
+    addTab(undefined, undefined, undefined, undefined, serverId);
+  }
 });
 </script>
 

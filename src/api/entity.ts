@@ -21,10 +21,10 @@ export interface ServerInfo {
     configurationDetails: string | null,
     cpu: string | null,
     ip: string | null,
-    diskSpace: number | null,
-    freeDiskSpace: number | null,
-    memorySpace: number | null,
-    freeMemorySpace: number | null,
+    diskSpace: number,
+    freeDiskSpace: number,
+    memorySpace: number,
+    freeMemorySpace: number,
     status: string | null,
     lastUpdate: string | null,
     lastLoginTime: string | null,
@@ -40,6 +40,10 @@ export interface ServerInfo {
     note: string | null,
     port: string | null,
     pwdIsCorrect: boolean | null,
+    loginUsername: string | null,
+    loginPassword: string | null,
+    shutdownDelayTime: number | null,
+    inWhite: boolean | null,
 }
 
 // socketMessage 交互实体

@@ -137,14 +137,14 @@
             </el-descriptions-item>
             <el-descriptions-item label="密码是否正确:">
                 <el-tag :type="serverInfo.pwdIsCorrect ? 'success' : 'danger'">{{ serverInfo.pwdIsCorrect ? '是' : '否'
-                }}</el-tag>
+                    }}</el-tag>
             </el-descriptions-item>
 
             <el-descriptions-item label="当前状态">{{ serverInfo.status }}</el-descriptions-item>
             <el-descriptions-item label="关机延迟时间">{{ serverInfo.shutdownDelayTime }}分钟</el-descriptions-item>
             <el-descriptions-item label="是否在白名单中">
                 <el-tag :type="serverInfo.inWhite ? 'success' : 'warning'">{{ serverInfo.inWhite ? '是' : '否'
-                }}</el-tag>
+                    }}</el-tag>
             </el-descriptions-item>
 
             <el-descriptions-item label="备注" :span="3">{{ serverInfo.note }}</el-descriptions-item>
@@ -152,13 +152,14 @@
     </div>
 </template>
 
-<script setup lang="js">
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getServerInfo, updateServerInfoById, deleteServerInfoById, getServerUserAuthInfo, updateUserAuthInfo } from '@/api/serverAPI'
 import { useRoute } from 'vue-router';
 import { Hide, View } from '@element-plus/icons-vue';
 import router from '@/router';
+import type { ServerInfo } from '@/api/entity';
 
 const customColors = [
     { color: 'green', percentage: 40 },
@@ -173,23 +174,51 @@ const dialogVisible = ref(false);
 const userAuthManage = ref(false);
 const isEditing = ref(false)
 
-const serverInfo = ref({})
+const serverInfo = ref<ServerInfo>({
+    id: 0,
+    configurationDetails: null,
+    cpu: null,
+    ip: null,
+    diskSpace: 1,
+    freeDiskSpace: 1,
+    memorySpace: 1,
+    freeMemorySpace: 1,
+    status: null,
+    lastUpdate: null,
+    lastLoginTime: null,
+    lastOnlineTime: null,
+    operatingSystem: null,
+    location: null,
+    name: null,
+    repairer: null,
+    repairerPhone: null,
+    principal: null,
+    price: null,
+    owner: null,
+    note: null,
+    port: null,
+    pwdIsCorrect: null,
+    loginUsername: null,
+    loginPassword: null,
+    shutdownDelayTime: null,
+    inWhite: null,
+})
 
 const showLoginPassword = ref(false);
 
 const tableData = ref([]);
 
 // 修改用户权限信息
-const changeCanAccess = (row) => {
+const changeCanAccess = (row: any) => {
     updateUserAuthInfo(row.serverId, row.userId, row.canAccess).then((resp) => {
-        if(resp.data.status === 200){
+        if (resp.data.status === 200) {
             row.canAccess = resp.data.data;
         }
     })
 }
 
 // 根据服务器id获取对应的用户权限信息
-const getUserAuthority = (serverId) => {
+const getUserAuthority = (serverId: any) => {
     authLoading.value = true;
     userAuthManage.value = true;
     getServerUserAuthInfo(serverId).then((resp) => {
@@ -198,7 +227,7 @@ const getUserAuthority = (serverId) => {
             authLoading.value = false;
         }
         else {
-            message.error("权限信息获取失败");
+            ElMessage.error("权限信息获取失败");
         }
     })
 }
@@ -211,7 +240,7 @@ const checkAuthorityAndGetLoginPassword = () => {
     }
 }
 
-const format = (percentage) => {
+const format = (percentage: any) => {
     return `${percentage}%`
 }
 
@@ -222,13 +251,13 @@ const deleteServer = () => {
             router.push('/manager')
         }
     })
-    dialogVisible = false;
+    dialogVisible.value = false;
 }
 
 // 获取路由参数
 // const currentRoute = useRoute();
 // 根据id获取服务器详细信息
-const getServerInfoById = (id) => {
+const getServerInfoById = (id: any) => {
     if (id === null) return;
     getServerInfo(id).then(resp => {
         if (resp.data.status === 200) {
