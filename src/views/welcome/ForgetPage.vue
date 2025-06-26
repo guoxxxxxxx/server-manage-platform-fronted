@@ -13,9 +13,9 @@
                     <div style="font-size: 14px;color: grey">请输入需要重置密码的电子邮件地址</div>
                 </div>
                 <div style="margin-top: 50px">
-                    <el-form :model="form" :rules="rules" @validate="onValidate" ref="formRef">
+                    <el-form :model="form" @validate="onValidate" ref="formRef">
                         <el-form-item prop="email">
-                            <el-input v-model="form.email" type="email" placeholder="电子邮件地址">
+                            <el-input v-model="form.email" type="email" placeholder="电子邮件地址/用户名">
                                 <template #prefix>
                                     <el-icon>
                                         <Message />
@@ -36,7 +36,7 @@
                                 </el-col>
                                 <el-col :span="5">
                                     <el-button type="success" @click="validateEmail"
-                                        :disabled="!isEmailValid || coldTime > 0">
+                                        :disabled="coldTime > 0">
                                         {{ coldTime > 0 ? '请稍后 ' + coldTime + ' 秒' : '获取验证码' }}
                                     </el-button>
                                 </el-col>
@@ -140,18 +140,19 @@ const onValidate = (prop: string, isValid: boolean) => {
 }
 
 const validateEmail = () => {
-    sendAuthCode(form.email, 'reset').then((resp) => {
-        if (resp.data.status == 200) {
-            coldTime.value = 60
-            ElMessage.success(`验证码已发送，请注意查收`);
-            const handle = setInterval(() => {
-                coldTime.value--
-                if (coldTime.value === 0) {
-                    clearInterval(handle)
-                }
-            }, 1000)
-        }
-    })
+    // sendAuthCode(form.email, 'reset').then((resp) => {
+    //     if (resp.data.status == 200) {
+    //         coldTime.value = 60
+    //         ElMessage.success(`验证码已发送，请注意查收`);
+    //         const handle = setInterval(() => {
+    //             coldTime.value--
+    //             if (coldTime.value === 0) {
+    //                 clearInterval(handle)
+    //             }
+    //         }, 1000)
+    //     }
+    // })
+    ElMessage.warning("输入单位简称即可 'iecxx' ");
 }
 
 const confirmReset = () => {
@@ -174,7 +175,7 @@ const doReset = () => {
             reset(form.email, form.code, form.password).then((resp) => {
                 if (resp.data.status == 200 && resp.data.data == true) {
                     ElMessage.success(`密码重置成功`)
-                    router.push("/")
+                    router.push("/dashboard")
                 }
                 else {
                     ElMessage.warning(`密码重置失败`)

@@ -3,16 +3,20 @@
         <div class="header">
             <h2>服务器详细信息</h2>
             <div>
+                <el-button type="success" @click="getUserAuthority(serverInfo.id)">
+                    终端访问控制管理
+                </el-button>
                 <el-button type="primary" @click="isEditing = !isEditing"
                     :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
                     {{ isEditing ? '取消编辑' : '编辑' }}
                 </el-button>
-                <el-button type="danger" @click="dialogVisible = true">
+                <el-button type="danger" @click="dialogVisible = true"
+                    :disabled="serverInfo.loginPassword === '当前用户权限不足!'">
                     删除
                 </el-button>
             </div>
 
-            <el-dialog v-model="dialogVisible" title="提示" width="500" :before-close="handleClose">
+            <el-dialog v-model="dialogVisible" title="提示" width="500">
                 <span>确定删除吗？</span>
                 <template #footer>
                     <div class="dialog-footer">
@@ -22,6 +26,20 @@
                         </el-button>
                     </div>
                 </template>
+            </el-dialog>
+
+
+            <el-dialog v-loading="authLoading" v-model="userAuthManage" title="权限访问管理" width="600">
+                <el-table :data="tableData" stripe style="width: 100%; height: 300px; overflow-y: auto;">
+                    <el-table-column prop="userId" label="用户id" width="100" />
+                    <el-table-column prop="username" label="用户名" width="180" />
+                    <el-table-column prop="roleName" label="用户角色" width="140" />
+                    <el-table-column prop="canAccess" label="访问权限">
+                        <template #default="scope">
+                            <el-switch v-model="scope.row.canAccess" @change="changeCanAccess(scope.row)" />
+                        </template>
+                    </el-table-column>
+                </el-table>
             </el-dialog>
 
         </div>
@@ -137,7 +155,7 @@
 <script setup lang="js">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getServerInfo, updateServerInfoById, deleteServerInfoById } from '@/api/serverAPI'
+import { getServerInfo, updateServerInfoById, deleteServerInfoById, getServerUserAuthInfo, updateUserAuthInfo } from '@/api/serverAPI'
 import { useRoute } from 'vue-router';
 import { Hide, View } from '@element-plus/icons-vue';
 import router from '@/router';
@@ -149,12 +167,41 @@ const customColors = [
     { color: 'red', percentage: 100 },
 ]
 
+const authLoading = ref(true);
+
 const dialogVisible = ref(false);
+const userAuthManage = ref(false);
 const isEditing = ref(false)
 
 const serverInfo = ref({})
 
 const showLoginPassword = ref(false);
+
+const tableData = ref([]);
+
+// 修改用户权限信息
+const changeCanAccess = (row) => {
+    updateUserAuthInfo(row.serverId, row.userId, row.canAccess).then((resp) => {
+        if(resp.data.status === 200){
+            row.canAccess = resp.data.data;
+        }
+    })
+}
+
+// 根据服务器id获取对应的用户权限信息
+const getUserAuthority = (serverId) => {
+    authLoading.value = true;
+    userAuthManage.value = true;
+    getServerUserAuthInfo(serverId).then((resp) => {
+        if (resp.data.status == 200) {
+            tableData.value = resp.data.data;
+            authLoading.value = false;
+        }
+        else {
+            message.error("权限信息获取失败");
+        }
+    })
+}
 
 const checkAuthorityAndGetLoginPassword = () => {
     if (serverInfo.value.loginPassword == "当前用户权限不足!") {

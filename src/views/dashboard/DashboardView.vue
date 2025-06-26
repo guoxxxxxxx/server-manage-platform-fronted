@@ -30,8 +30,10 @@
     <el-row :gutter="20" class="dashboard-content">
       <el-col :span="16">
         <el-card>
-          <div class="chart-title">服务器状态分布</div>
-          <div ref="serverStatusChart" class="chart"></div>
+          <div class="chart-title">本项目已开源至Github:</div>
+          <div class="chart-title">使用说明请见GitHub</div>
+          <div class="chart-title">前端: 🔗https://github.com/guoxxxxxxx/server-manage-platform-fronted</div>
+          <div class="chart-title">后端: 🔗https://github.com/guoxxxxxxx/server-manage-platform</div>
         </el-card>
       </el-col>
       <el-col :span="8">

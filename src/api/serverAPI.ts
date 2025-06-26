@@ -129,3 +129,15 @@ export const getDashboardServerInfo = () => {
 export const deleteServerInfoById = (id: number) => {
     return baseRequest.delete(`/serverInfo/${id}`);
 }
+
+
+// 根据服务器id获取用户权限信息
+export const getServerUserAuthInfo = (serverId: number) => {
+    return baseRequest.get(`/serverUserAuthorityInfo/getCurrentServerUserAuth/${serverId}`);
+}
+
+
+// 根据信息修改用户权限
+export const updateUserAuthInfo = (serverId: number, userId: number, auth: boolean) => {
+    return baseRequest.put(`/serverUserAuthorityInfo/updateUserAuthInfo/${serverId}/${userId}/${auth}`);
+}
